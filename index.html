@@ -2515,28 +2515,59 @@ const rows=Object.values(m.jugadas);
 AH.data.replays=AH.data.replays||{};
 for(const p of rows)AH.data.replays[p.gameId+"-"+p.playId]=p;
 AH.data.demo.replays.disponibles=rows.length;
+const eventAt=(f,name)=>Array.isArray(f.eventos)&&f.eventos.includes(name);
 AH.data.demo.replays.conocidos=rows.map(p=>{
  const frames=p.secuencia_observada||[];
- const snap=frames.find(f=>f.evento==="ball_snap"||f.event==="ball_snap");
- const forward=frames.find(f=>f.evento==="pass_forward"||f.event==="pass_forward");
+ const snap=frames.find(f=>eventAt(f,"ball_snap"));
+ const forward=frames.find(f=>eventAt(f,"pass_forward"));
  return {gameId:p.gameId,playId:p.playId,temporada:2021,ofensiva:p.equipo,defensa:p.defensa,
  down:p.situacion.down,yardas:p.situacion.yardas,yardas_a_goal:p.situacion.yardas_a_goal,
- cuadros:frames.length,snap:snap?.frameId||null,lanzamiento:forward?.frameId||null,fps:10};
+ cuadros:frames.length,snap:snap?.frameId??null,lanzamiento:forward?.frameId??null,fps:10};
 });
+/* El backend original oculta la secuencia al pedir revelar=false. Para que PLAY
+   funcione sin revelar el desenlace, usamos las posiciones observadas del modelo
+   distribuido con la demo. El resultado permanece estrictamente oculto. */
+function adaptReplay(raw,reveal,fallback){
+ if(!raw||typeof raw!=="object")throw {kind:"formato",message:"Respuesta del replay no válida"};
+ const seq=(Array.isArray(raw.secuencia_observada)&&raw.secuencia_observada.length)
+   ?raw.secuencia_observada:fallback?.secuencia_observada;
+ if(!Array.isArray(seq)||seq.length<2)throw {kind:"formato",message:"No hay suficientes cuadros observados para reproducir"};
+ const frames=seq.map(f=>({
+   frameId:f.frameId,
+   evento:eventAt(f,"ball_snap")?"ball_snap":eventAt(f,"pass_forward")?"pass_forward":null,
+   jugadores:(f.jugadores||[]).map(a=>({nflId:a[0],equipo:a[1],x:a[2],y:a[3]})),
+   balon:Array.isArray(f.balon)?{x:f.balon[0],y:f.balon[1]}:null
+ }));
+ const rawOutcome=reveal?(raw.desenlace||fallback?.desenlace||null):null;
+ const outcome=rawOutcome?{
+   ...rawOutcome,convirtio:rawOutcome.alcanzo_distancia,
+   tipo:rawOutcome.pase
+ }:null;
+ return {...raw,ofensiva:raw.equipo||fallback?.equipo,
+   defensa:raw.defensa||fallback?.defensa,
+   contexto:raw.situacion||fallback?.situacion,
+   playDirection:"right",fps:10,tracking:frames,
+   secuencia_observada:reveal?seq:null,
+   desenlace:outcome};
+}
 const old={suggestion:AH.api.suggestion,play:AH.api.play,catalog:AH.api.catalog,detectBackend:AH.api.detectBackend};
 AH.api.suggestion=function(sit,opts){
  if(AH.api.isBackend())return old.suggestion(sit,opts);
  const raw=estimate(Number(sit.down),Number(sit.yardas),Number(sit.yardas_a_goal),sit.equipo||null);
- return Promise.resolve(AH.adapters.suggestionFromApi({...raw,referencia:raw.grupo},sit));
+ const vm=AH.adapters.suggestionFromApi({...raw,referencia:raw.grupo},sit);
+ vm.origin="local";
+ if(vm.forecast)vm.forecast.source="Modelo precalculado · datos reales";
+ if(vm.frequency)vm.frequency.source="Histórico precalculado · desarrollo";
+ return Promise.resolve(vm);
 };
 AH.api.play=function(gameId,playId,opts){
- if(AH.api.isBackend())return old.play(gameId,playId,opts);
- const p=AH.data.replays[gameId+"-"+playId];
- if(!p)return Promise.reject({kind:"http",status:404});
- const mostrar=Boolean(opts&&opts.revelar);
- return Promise.resolve({...p,desenlace:mostrar?p.desenlace:null,
- secuencia_observada:mostrar?p.secuencia_observada:null,
- evaluacion:estimate(p.situacion.down,p.situacion.yardas,p.situacion.yardas_a_goal,null)});
+ const revelar=Boolean(opts&&opts.revelar);
+ const cached=AH.data.replays[gameId+"-"+playId];
+ if(AH.api.isBackend()){
+   return old.play(gameId,playId,opts).then(raw=>adaptReplay(raw,revelar,cached));
+ }
+ if(!cached)return Promise.reject({kind:"http",status:404});
+ return Promise.resolve(adaptReplay(cached,revelar,cached));
 };
 AH.api.catalog=function(){
  if(AH.api.isBackend())return old.catalog();
