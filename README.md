@@ -1,13 +1,17 @@
 # Al Huddle
 
-## 🎮 Demo interactiva para el jurado
+## 🏈 DEMO EN VIVO — ABRIR LA APLICACIÓN
 
-**[ABRIR AL HUDDLE EN EL NAVEGADOR](https://leonardosolis0303.github.io/NFL-Big-DataBowl-CoyoPaqueteros_OFICIAL/)**
+### 👉 [**ENTRAR A AL HUDDLE · DEMO INTERACTIVA**](https://leonardosolis0303.github.io/NFL-Big-DataBowl-CoyoPaqueteros_OFICIAL/)
 
-La versión pública funciona sin instalar nada: incluye el modelo precalculado (probabilidades para escenarios admitidos), evidencia histórica y cinco replays con tracking observado. Los datos se identifican como **copia local de los resultados del backend**; no son un servicio predictivo en vivo. La función opcional de IA con Amazon Bedrock requiere un backend y credenciales temporales, por lo que no funciona en GitHub Pages.
+**No se requiere instalación ni iniciar sesión.** Haz clic en el enlace anterior para explorar Al Huddle directamente desde el navegador.
 
-Si la URL todavía no abre, el propietario debe activar **Settings → Pages → Build and deployment → Source: GitHub Actions**, guardar y ejecutar el workflow `Publicar demo interactiva Al Huddle en GitHub Pages` desde la pestaña Actions.
+**Qué puedes probar:** seleccionar situaciones de tercer down, consultar probabilidades y evidencia histórica del modelo, explorar formaciones sin recomendaciones no respaldadas y revisar cinco jugadas reales con tracking. Para comenzar, prueba **3.ª y 2 desde la yarda 33 propia** y busca el replay **2021090900/97**.
 
+**Nota de transparencia:** la demo pública utiliza una copia local de resultados y coeficientes reales precalculados; GitHub Pages no ejecuta FastAPI ni el asistente opcional de Amazon Bedrock. El código del backend y las instrucciones de instalación están disponibles en este repositorio.
+
+---
+  
 **Apoyo a decisiones ofensivas en tercer down de pase · NFL Big Data Bowl UNAM 2026**
 
 Al Huddle le da al coach ofensivo una lectura rápida de una tercera oportunidad de pase. Muestra cuál es la probabilidad estimada de alcanzar la distancia, cuántas jugadas comparables la respaldan y qué pasó realmente en jugadas observadas con tracking. Si no hay evidencia suficiente, la herramienta lo dice y no inventa un número.
