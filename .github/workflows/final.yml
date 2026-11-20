@@ -1,0 +1,107 @@
+name: Crear AL_HUDDLE_FINAL con stack oficial
+on:
+  push:
+    paths:
+      - .github/workflows/final.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  final:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: LeonardoSolis0303/NFL_Big_DataBowl_OFICIAL
+          ref: 9a3329879785c9391f8e9655b663daa862f71358
+          path: upstream
+      - name: Integrar backend oficial y React con interfaz Claude
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a upstream/.hackathon upstream/.kiro upstream/backend upstream/tests upstream/docs upstream/tools upstream/data upstream/ejemplo_para_pablo.json upstream/.env.example upstream/.gitignore upstream/README.md .
+          mkdir -p dashboard
+          cp -a upstream/dashboard/. dashboard/
+          mkdir -p dashboard/public
+          cp index.html dashboard/public/al-huddle.html
+          cat > dashboard/src/App.tsx <<'EOF'
+          import React from 'react';
+          export default function App() {
+            return <iframe title="Al Huddle — análisis NFL" src="./al-huddle.html" style={{width:'100%',height:'100dvh',border:0,display:'block'}} allow="fullscreen"/>;
+          }
+          EOF
+          cat > dashboard/src/index.css <<'EOF'
+          * {box-sizing:border-box}
+          html,body,#root {margin:0;min-height:100%;height:100%}
+          body {background:#080c0b;overflow:hidden}
+          EOF
+          cat > dashboard/vite.config.ts <<'EOF'
+          import { defineConfig } from 'vite';
+          import react from '@vitejs/plugin-react';
+          export default defineConfig({
+            plugins:[react()],
+            base:'./',
+            server:{host:'0.0.0.0',proxy:{'/api':{target:'http://127.0.0.1:8000',changeOrigin:true}}}
+          });
+          EOF
+          rm -rf upstream
+          test -f backend/modelo.json
+          test -f dashboard/public/al-huddle.html
+          test -f .hackathon/setup.sh
+          test ! -e data/plays.csv
+      - name: Instalar stack oficial
+        run: sh .hackathon/setup.sh --name NFL-Big-DataBowl-CoyoPaqueteros_OFICIAL
+      - name: Verificar stack
+        run: sh .hackathon/setup.sh --check
+      - name: Pruebas de backend y TypeScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          .venv/bin/python -m unittest discover -s tests -v
+          cd dashboard
+          npm run build
+      - name: Entrega oficial (compilación, validación, seguridad, ZIP)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh .hackathon/setup.sh --entregar
+          file="$(find .. -maxdepth 1 -type f -name 'entrega-*.zip' -print | sort | tail -1)"
+          test -n "$file"
+          python3 - "$file" <<'PY'
+          import sys, zipfile
+          z=zipfile.ZipFile(sys.argv[1])
+          names=z.namelist()
+          assert z.testzip() is None
+          for p in ['backend/main.py','backend/modelo.json','dashboard/dist/index.html','dashboard/dist/al-huddle.html','README.md']:
+              assert any(s.endswith('/'+p) for s in names), p
+          assert not any(('/.venv/' in n or '/node_modules/' in n or '/.hackathon/' in n or '/.env' in n) for n in names)
+          print('ZIP OFICIAL OK:',len(names),'archivos')
+          PY
+          cp "$file" AL_HUDDLE_FINAL.zip
+      - name: Publicar integración en GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git reset -q AL_HUDDLE_FINAL.zip || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Integrar frontend React, backend estadístico, IA opcional y dashboard final"
+            git push origin HEAD:main
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AL_HUDDLE_FINAL
+          path: AL_HUDDLE_FINAL.zip
+          if-no-files-found: error
+      - name: Publicar ZIP final en GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create final-2026 AL_HUDDLE_FINAL.zip --title "Al Huddle FINAL — NFL Big Data Bowl UNAM 2026" --notes "ZIP de hosting generado y validado mediante el script oficial .hackathon/setup.sh --entregar. Incluye React/Vite, FastAPI, modelo precalculado y la interfaz de Al Huddle." --target main
