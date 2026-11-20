@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/final.yml
+      - index.html
   workflow_dispatch:
 permissions:
   contents: write
@@ -23,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp -a upstream/.hackathon upstream/.kiro upstream/backend upstream/tests upstream/docs upstream/tools upstream/data upstream/ejemplo_para_pablo.json upstream/.env.example upstream/.gitignore upstream/README.md .
+          cp -a upstream/.hackathon upstream/.kiro upstream/backend upstream/tests upstream/docs upstream/tools upstream/data upstream/ejemplo_para_pablo.json upstream/.env.example upstream/.gitignore .
           mkdir -p dashboard
           cp -a upstream/dashboard/. dashboard/
           mkdir -p dashboard/public
@@ -104,4 +105,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create final-2026 AL_HUDDLE_FINAL.zip --title "Al Huddle FINAL — NFL Big Data Bowl UNAM 2026" --notes "ZIP de hosting generado y validado mediante el script oficial .hackathon/setup.sh --entregar. Incluye React/Vite, FastAPI, modelo precalculado y la interfaz de Al Huddle." --target main
+          if gh release view final-2026 >/dev/null 2>&1; then
+            gh release upload final-2026 AL_HUDDLE_FINAL.zip --clobber
+          else
+            gh release create final-2026 AL_HUDDLE_FINAL.zip --title "Al Huddle FINAL — NFL Big Data Bowl UNAM 2026" --notes "ZIP generado y validado con el script oficial --entregar, con demo estática integrada." --target main
+          fi
