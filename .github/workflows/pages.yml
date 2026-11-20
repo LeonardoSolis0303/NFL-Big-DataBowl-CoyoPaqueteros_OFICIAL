@@ -22,14 +22,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Habilitar GitHub Pages si hace falta
+      - name: Confirmar Pages habilitado
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
         run: |
-          if ! gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow
-          fi
+          gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null || {
+            echo "::error::Activa Settings -> Pages -> Build and deployment -> GitHub Actions y vuelve a ejecutar este workflow."
+            exit 1
+          }
       - name: Preparar sitio estático
         shell: bash
         run: |
