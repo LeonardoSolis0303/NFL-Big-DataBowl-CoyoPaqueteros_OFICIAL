@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/final.yml
       - index.html
+      - tools/check_public_replay.mjs
   workflow_dispatch:
 permissions:
   contents: write
@@ -65,6 +66,8 @@ jobs:
           .venv/bin/python -m unittest discover -s tests -v
           cd dashboard
           npm run build
+      - name: Probar replays públicos y protección del resultado
+        run: node tools/check_public_replay.mjs
       - name: Entrega oficial (compilación, validación, seguridad, ZIP)
         shell: bash
         run: |
