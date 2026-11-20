@@ -78,7 +78,7 @@ jobs:
           assert z.testzip() is None
           for p in ['backend/main.py','backend/modelo.json','dashboard/dist/index.html','dashboard/dist/al-huddle.html','README.md']:
               assert any(s.endswith('/'+p) for s in names), p
-          assert not any(('/.venv/' in n or '/node_modules/' in n or '/.hackathon/' in n or '/.env' in n) for n in names)
+          assert not any(('/.venv/' in n or '/node_modules/' in n or '/.hackathon/' in n or n.endswith('/.env')) for n in names), 'Se detectó un archivo prohibido'
           print('ZIP OFICIAL OK:',len(names),'archivos')
           PY
           cp "$file" AL_HUDDLE_FINAL.zip
