@@ -1,10 +1,10 @@
 # Entrega: NFL-Big-DataBowl-CoyoPaqueteros_OFICIAL
 
-- Generado: 2026-11-20 19:47 (linux x64)
+- Generado: 2026-11-20 19:48 (linux x64)
 - Stack verificado: Python 3.12.12, Node 22.23.1, uv 0.11.19
 - Dashboard compilado: sí (dashboard/dist)
 - Backend: se importa sin errores
-- Archivos incluidos: 41 (3.0 MB sin comprimir)
+- Archivos incluidos: 42 (3.0 MB sin comprimir)
 - Desviaciones del stack: ninguna
 
 ## Avisos
